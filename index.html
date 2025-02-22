@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <!-- Mobile-friendly meta -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DA Science Academy Attendance System</title>
+  <!-- Load jsPDF and AutoTable from a CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    /* Global Styles & Animations */
+    body {
+      background: linear-gradient(45deg, #ffffff, #87ceeb);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      animation: fadeIn 1s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .container {
+      max-width: 900px;
+      width: 100%;
+      margin: 40px auto;
+      background-color: #fff;
+      border-radius: 10px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+      border: 2px solid #87ceeb;
+      animation: slideDown 0.8s ease-out;
+    }
+    @keyframes slideDown {
+      from { transform: translateY(-20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    h1, h2 {
+      text-align: center;
+      color: #000;
+      margin: 20px 0;
+    }
+
+    /* Forms & Mobile Responsiveness */
+    form, .edit-form {
+      padding: 20px;
+      background-color: #f9f9f9;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      animation: formAnim 1s ease-out;
+    }
+    @keyframes formAnim {
+      from { transform: translateX(-20px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    form input[type="text"], form select,
+    .edit-form input[type="text"], .edit-form select {
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      transition: border-color 0.3s;
+    }
+    form input[type="text"]:focus, form select:focus,
+    .edit-form input[type="text"]:focus, .edit-form select:focus {
+      border-color: #87ceeb;
+      outline: none;
+    }
+
+    /* Date Picker in Add Form */
+    #datePicker {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    #datePicker > div {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 100px;
+    }
+    #datePicker label {
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    /* Buttons */
+    button {
+      padding: 12px;
+      font-size: 16px;
+      background-color: #87ceeb;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.2s;
+    }
+    button:hover {
+      background-color: #00aaff;
+      transform: scale(1.05);
+    }
+    button:active {
+      transform: scale(0.98);
+    }
+    .btn-small {
+      padding: 8px 12px;
+      font-size: 14px;
+      margin: 0 2px;
+    }
+    .action-buttons {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+    #downloadBtn, #clearBtn {
+      margin: 10px;
+    }
+
+    /* Filter Buttons */
+    .filter-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      padding: 10px;
+    }
+    .filter-buttons button {
+      min-width: 80px;
+    }
+
+    /* Search & Summary */
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      gap: 10px;
+    }
+    .toolbar input[type="text"] {
+      flex: 1;
+      max-width: 300px;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    .summary {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      font-weight: bold;
+      color: #333;
+    }
+    .summary div {
+      background-color: #87ceeb;
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 5px;
+    }
+
+    /* Table Styles */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      animation: tableAnim 1s ease-in;
+    }
+    @keyframes tableAnim {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background-color: #000;
+      color: #fff;
+    }
+    tr:hover {
+      background-color: #f1f1f1;
+    }
+    /* Make table horizontally scrollable on very small screens */
+    #recordsTable {
+      overflow-x: auto;
+    }
+
+    /* Modal Styles (Edit) */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 10;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.5);
+      animation: fadeInModal 0.5s;
+    }
+    @keyframes fadeInModal {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .modal-content {
+      background-color: #fefefe;
+      margin: 10% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 90%;
+      max-width: 500px;
+      border-radius: 10px;
+      position: relative;
+    }
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .close:hover {
+      color: #000;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>DA Science Academy Attendance System</h1>
+
+    <!-- Add Attendance Form -->
+    <form id="attendanceForm">
+      <input type="text" id="studentName" placeholder="Student Name" required />
+
+      <!-- Custom Date Picker (Add Form Only) -->
+      <div id="datePicker">
+        <div>
+          <label for="day">Day:</label>
+          <select id="day" required></select>
+        </div>
+        <div>
+          <label for="month">Month:</label>
+          <select id="month" required></select>
+        </div>
+        <div>
+          <label for="year">Year:</label>
+          <select id="year" required></select>
+        </div>
+      </div>
+
+      <!-- Attendance Status -->
+      <select id="status" required>
+        <option value="">Select Status</option>
+        <option value="Present">Present</option>
+        <option value="Absent">Absent</option>
+        <option value="Late">Late</option>
+        <option value="Excused">Excused</option>
+        <option value="Remote">Remote</option>
+      </select>
+      <button type="submit">Add Attendance</button>
+    </form>
+
+    <!-- Filter Buttons (by Status) -->
+    <div class="filter-buttons">
+      <button onclick="filterByStatus('All')">All</button>
+      <button onclick="filterByStatus('Present')">Present</button>
+      <button onclick="filterByStatus('Absent')">Absent</button>
+      <button onclick="filterByStatus('Late')">Late</button>
+      <button onclick="filterByStatus('Excused')">Excused</button>
+      <button onclick="filterByStatus('Remote')">Remote</button>
+    </div>
+
+    <!-- Toolbar: Search & Summary -->
+    <div class="toolbar">
+      <input type="text" id="searchBox" placeholder="Search by student name..." />
+      <div class="summary" id="summaryPanel">
+        <!-- Summary counts will be updated here -->
+      </div>
+    </div>
+
+    <!-- Download & Clear Buttons -->
+    <div style="display: flex; justify-content: center; gap: 10px; padding: 10px;">
+      <button id="downloadBtn">Download Data</button>
+      <button id="clearBtn">Clear All Data</button>
+    </div>
+
+    <!-- Attendance Records Table -->
+    <h2>Attendance Records</h2>
+    <table id="recordsTable">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Date</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Attendance records will be inserted here -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Edit Modal (No Date Fields) -->
+  <div id="editModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="closeModal">&times;</span>
+      <h2>Edit Attendance</h2>
+      <form id="editForm" class="edit-form">
+        <!-- Hidden field to track which record is being edited -->
+        <input type="hidden" id="editIndex" />
+        <!-- Hidden field to preserve original date -->
+        <input type="hidden" id="editDate" />
+
+        <!-- Only edit Name & Status -->
+        <input type="text" id="editStudentName" placeholder="Student Name" required />
+        <select id="editStatus" required>
+          <option value="">Select Status</option>
+          <option value="Present">Present</option>
+          <option value="Absent">Absent</option>
+          <option value="Late">Late</option>
+          <option value="Excused">Excused</option>
+          <option value="Remote">Remote</option>
+        </select>
+        <button type="submit">Update Attendance</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    /* -------------------------------------
+       1) Populate Date Selectors (Add Form)
+       ------------------------------------- */
+    function populateDateSelectors() {
+      const daySelect = document.getElementById('day');
+      const monthSelect = document.getElementById('month');
+      const yearSelect = document.getElementById('year');
+
+      // Clear existing options
+      daySelect.innerHTML = "";
+      monthSelect.innerHTML = "";
+      yearSelect.innerHTML = "";
+
+      // Populate day (1-31)
+      for (let i = 1; i <= 31; i++) {
+        const option = document.createElement('option');
+        option.value = i < 10 ? '0' + i : '' + i;
+        option.text = i;
+        daySelect.appendChild(option);
+      }
+
+      // Populate month
+      const months = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+      ];
+      for (let i = 0; i < 12; i++) {
+        const option = document.createElement('option');
+        const monthNumber = i + 1;
+        option.value = monthNumber < 10 ? '0' + monthNumber : '' + monthNumber;
+        option.text = months[i];
+        monthSelect.appendChild(option);
+      }
+
+      // Populate year (allow up to 10 years ahead)
+      const currentYear = new Date().getFullYear();
+      for (let i = 2000; i <= currentYear + 10; i++) {
+        const option = document.createElement('option');
+        option.value = '' + i;
+        option.text = i;
+        yearSelect.appendChild(option);
+      }
+    }
+
+    /* -------------------------------------
+       2) Local Storage Helper Functions
+       ------------------------------------- */
+    function getAttendanceRecords() {
+      const records = localStorage.getItem('attendanceRecords');
+      return records ? JSON.parse(records) : [];
+    }
+    function saveAttendanceRecords(records) {
+      localStorage.setItem('attendanceRecords', JSON.stringify(records));
+    }
+
+    /* -------------------------------------
+       3) Rendering & Summary
+       ------------------------------------- */
+    let currentStatusFilter = "All"; // Keep track of which status filter is active
+
+    function renderRecords(filterText = "", status = "All") {
+      const records = getAttendanceRecords();
+      const tbody = document.querySelector('#recordsTable tbody');
+      tbody.innerHTML = "";
+
+      records.forEach((record, index) => {
+        // 1) Filter by status if not "All"
+        if (status !== "All" && record.status !== status) return;
+
+        // 2) Filter by search text if provided
+        if (filterText && !record.studentName.toLowerCase().includes(filterText.toLowerCase())) {
+          return;
+        }
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${record.studentName}</td>
+          <td>${record.attendanceDate}</td>
+          <td>${record.status}</td>
+          <td class="action-buttons">
+            <button class="btn-small" onclick="editRecord(${index})">Edit</button>
+            <button class="btn-small" onclick="deleteRecord(${index})">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      updateSummary();
+    }
+
+    function updateSummary() {
+      const records = getAttendanceRecords();
+      const summary = {
+        Total: records.length,
+        Present: 0,
+        Absent: 0,
+        Late: 0,
+        Excused: 0,
+        Remote: 0
+      };
+
+      records.forEach(r => {
+        if (summary[r.status] !== undefined) {
+          summary[r.status]++;
+        }
+      });
+
+      const summaryPanel = document.getElementById('summaryPanel');
+      summaryPanel.innerHTML = `
+        <div>Total: ${summary.Total}</div>
+        <div>Present: ${summary.Present}</div>
+        <div>Absent: ${summary.Absent}</div>
+        <div>Late: ${summary.Late}</div>
+        <div>Excused: ${summary.Excused}</div>
+        <div>Remote: ${summary.Remote}</div>
+      `;
+    }
+
+    /* -------------------------------------
+       4) Filter by Status Buttons
+       ------------------------------------- */
+    function filterByStatus(status) {
+      currentStatusFilter = status;
+      const searchText = document.getElementById('searchBox').value;
+      renderRecords(searchText, currentStatusFilter);
+    }
+
+    /* -------------------------------------
+       5) Adding a New Record (Add Form)
+       ------------------------------------- */
+    document.getElementById('attendanceForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      const studentName = document.getElementById('studentName').value;
+      const day = document.getElementById('day').value;
+      const month = document.getElementById('month').value;
+      const year = document.getElementById('year').value;
+      const status = document.getElementById('status').value;
+      const attendanceDate = `${year}-${month}-${day}`; // e.g. "2025-02-22"
+
+      const records = getAttendanceRecords();
+      records.push({ studentName, attendanceDate, status });
+      saveAttendanceRecords(records);
+
+      // Re-render with current filters
+      renderRecords(document.getElementById('searchBox').value, currentStatusFilter);
+
+      // Clear the form
+      this.reset();
+    });
+
+    /* -------------------------------------
+       6) Search Box
+       ------------------------------------- */
+    document.getElementById('searchBox').addEventListener('input', function() {
+      renderRecords(this.value, currentStatusFilter);
+    });
+
+    /* -------------------------------------
+       7) Download & Clear Data
+       ------------------------------------- */
+    document.getElementById('downloadBtn').addEventListener('click', function() {
+      const records = getAttendanceRecords();
+      if (!records.length) {
+        alert("No attendance records to download.");
+        return;
+      }
+
+      // Use jsPDF and autoTable to generate a PDF
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'pt',
+        format: 'A4'
+      });
+
+      // Optional: Add a title
+      doc.setFontSize(16);
+      doc.text("DA Science Academy - Attendance Data", doc.internal.pageSize.getWidth() / 2, 40, {
+        align: 'center'
+      });
+
+      // Build table content for autoTable
+      const tableColumns = ["Student Name", "Attendance Date", "Status"];
+      const tableRows = records.map(r => [
+        r.studentName,
+        r.attendanceDate,
+        r.status
+      ]);
+
+      // Add the table to the PDF
+      doc.autoTable({
+        startY: 60,
+        head: [tableColumns],
+        body: tableRows,
+        headStyles: {
+          fillColor: [135, 206, 235],  // Sky Blue
+          textColor: 255,              // White text
+          halign: 'center'
+        },
+        bodyStyles: {
+          textColor: [0, 0, 0]
+        },
+        margin: { left: 40, right: 40 },
+      });
+
+      doc.save("attendance_data.pdf");
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', function() {
+      if (confirm('Are you sure you want to clear all attendance data?')) {
+        localStorage.removeItem('attendanceRecords');
+        renderRecords();
+      }
+    });
+
+    /* -------------------------------------
+       8) Edit & Delete Record
+       ------------------------------------- */
+    // Expose functions to window so inline onclick works
+    window.editRecord = function(index) {
+      const records = getAttendanceRecords();
+      const record = records[index];
+
+      document.getElementById('editIndex').value = index;
+      document.getElementById('editDate').value = record.attendanceDate; // hidden, keeps date the same
+      document.getElementById('editStudentName').value = record.studentName;
+      document.getElementById('editStatus').value = record.status;
+
+      document.getElementById('editModal').style.display = "block";
+    };
+
+    window.deleteRecord = function(index) {
+      if (confirm('Are you sure you want to delete this record?')) {
+        const records = getAttendanceRecords();
+        records.splice(index, 1);
+        saveAttendanceRecords(records);
+        renderRecords(document.getElementById('searchBox').value, currentStatusFilter);
+      }
+    };
+
+    /* -------------------------------------
+       9) Edit Modal Behavior
+       ------------------------------------- */
+    document.getElementById('closeModal').addEventListener('click', function() {
+      document.getElementById('editModal').style.display = "none";
+    });
+    window.addEventListener('click', function(e) {
+      const modal = document.getElementById('editModal');
+      if (e.target === modal) {
+        modal.style.display = "none";
+      }
+    });
+
+    // Update the record on form submission
+    document.getElementById('editForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const index = document.getElementById('editIndex').value;
+      const studentName = document.getElementById('editStudentName').value;
+      const date = document.getElementById('editDate').value; // original date
+      const status = document.getElementById('editStatus').value;
+
+      const records = getAttendanceRecords();
+      records[index] = { studentName, attendanceDate: date, status };
+      saveAttendanceRecords(records);
+
+      // Re-render with current filters
+      renderRecords(document.getElementById('searchBox').value, currentStatusFilter);
+
+      // Close the modal
+      document.getElementById('editModal').style.display = "none";
+    });
+
+    /* -------------------------------------
+       10) Initialize
+       ------------------------------------- */
+    // Populate the Add Form's date dropdowns
+    populateDateSelectors();
+    // Render any existing records with default filters
+    renderRecords();
+  </script>
+</body>
+  </html>

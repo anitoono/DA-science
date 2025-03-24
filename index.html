@@ -7,8 +7,11 @@
   <title>QR Code Attendance System</title>
 
   <!-- Load external libraries from CDNs -->
+  <!-- For generating QR codes -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- For scanning QR codes -->
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <!-- For creating PDFs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 
@@ -254,7 +257,6 @@
       width: 300px;
       margin: 0 auto;
     }
-
   </style>
 </head>
 <body>
@@ -600,7 +602,6 @@
       // Clear form
       document.getElementById("studentName").value = "";
       document.getElementById("status").value = "";
-      // Optionally reset date to default if needed
 
       // Re-render
       renderRecords(document.getElementById("searchBox").value, currentStatusFilter);
@@ -747,6 +748,7 @@
         qrCodeSuccessCallback
       ).catch(err => {
         console.error("QR start error:", err);
+        alert("Unable to start QR scanner. Check console for details, or ensure you're on HTTPS/localhost and have granted camera permission.");
       });
     }
     function stopQrScan() {

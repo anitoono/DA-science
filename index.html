@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <!-- Mobile-friendly meta -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>QR Code Attendance System</title>
+  <title>QR Code Attendance System with Admin Panel</title>
 
   <!-- Load external libraries from CDNs -->
   <!-- For generating QR codes -->
@@ -43,7 +43,12 @@
       overflow: hidden;
     }
 
-    /* Top Nav for switching between QR Generator & Attendance */
+    /* Hide container until logged in */
+    .container.hidden {
+      display: none;
+    }
+
+    /* Top Nav for switching between sections */
     .top-nav {
       display: flex;
       justify-content: space-around;
@@ -114,7 +119,7 @@
       margin: 0 2px;
     }
 
-    /* Forms */
+    /* Forms & Containers */
     .form-container, .edit-form {
       display: flex;
       flex-direction: column;
@@ -257,15 +262,76 @@
       width: 300px;
       margin: 0 auto;
     }
+
+    /* LOGIN SECTION */
+    .login-container {
+      max-width: 400px;
+      margin: 100px auto;
+      background-color: #fff;
+      border: 2px solid #87ceeb;
+      border-radius: 10px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+      padding: 20px;
+      text-align: center;
+    }
+    .login-container h1 {
+      margin-bottom: 20px;
+    }
+    .login-container input {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+
+    /* ADMIN PANEL */
+    .admin-stats {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .admin-stats .stat-block {
+      background-color: #f9f9f9;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ddd;
+    }
+    .admin-stats .stat-title {
+      font-weight: bold;
+      margin-bottom: 5px;
+      color: #333;
+    }
+    .logout-btn {
+      float: right;
+      margin-right: 20px;
+      margin-top: -10px;
+      background-color: #dc3545 !important; /* red */
+    }
   </style>
 </head>
 <body>
-  <div class="container">
+  <!-- LOGIN SECTION -->
+  <div id="loginSection" class="login-container">
+    <h1>DA Science Academy</h1>
+    <p><strong>Login Required</strong></p>
+    <input type="text" id="loginUser" placeholder="Username" />
+    <input type="password" id="loginPass" placeholder="Password" />
+    <button id="loginBtn">Login</button>
+    <p style="font-size: 14px; margin-top: 10px;">
+      <em>Hint: Username = DA, Password = 112234455</em>
+    </p>
+  </div>
 
+  <!-- MAIN CONTAINER (Hidden until login) -->
+  <div class="container hidden" id="mainContainer">
     <!-- Top Navigation for switching sections -->
     <div class="top-nav">
       <button id="btnQrGen" class="active">Generate QR</button>
       <button id="btnAttendance">Attendance</button>
+      <button id="btnAdmin">Admin Panel</button>
     </div>
 
     <!-- SECTION 1: QR CODE GENERATOR -->
@@ -359,6 +425,18 @@
         </table>
       </div>
     </div>
+
+    <!-- SECTION 3: ADMIN PANEL -->
+    <div id="adminSection" class="section">
+      <button class="logout-btn" id="logoutBtn">Logout</button>
+      <h1>Admin Panel</h1>
+      <p style="text-align:center;">
+        This panel shows basic analytics for the attendance system.
+      </p>
+      <div class="admin-stats" id="adminStats">
+        <!-- We'll fill these with dynamic stats -->
+      </div>
+    </div>
   </div>
 
   <!-- EDIT MODAL -->
@@ -395,25 +473,54 @@
 
   <script>
     /* ---------------------------------------------
-       1) Nav Tabs for QR Generator & Attendance
+       0) Login System
+       --------------------------------------------- */
+    const loginSection = document.getElementById("loginSection");
+    const mainContainer = document.getElementById("mainContainer");
+    const loginBtn = document.getElementById("loginBtn");
+    const loginUser = document.getElementById("loginUser");
+    const loginPass = document.getElementById("loginPass");
+
+    loginBtn.addEventListener("click", () => {
+      const userVal = loginUser.value.trim();
+      const passVal = loginPass.value.trim();
+      // Hard-coded credentials: user = "DA", pass = "112234455"
+      if (userVal === "DA" && passVal === "112234455") {
+        // Show main container, hide login
+        loginSection.style.display = "none";
+        mainContainer.classList.remove("hidden");
+      } else {
+        alert("Invalid username or password!");
+      }
+    });
+
+    /* ---------------------------------------------
+       1) Nav Tabs for QR Generator, Attendance, Admin
        --------------------------------------------- */
     const btnQrGen = document.getElementById("btnQrGen");
     const btnAttendance = document.getElementById("btnAttendance");
+    const btnAdmin = document.getElementById("btnAdmin");
+
     const qrGenSection = document.getElementById("qrGenSection");
     const attendanceSection = document.getElementById("attendanceSection");
+    const adminSection = document.getElementById("adminSection");
 
-    btnQrGen.addEventListener("click", () => {
-      btnQrGen.classList.add("active");
-      btnAttendance.classList.remove("active");
-      qrGenSection.classList.add("active");
-      attendanceSection.classList.remove("active");
-    });
+    function showSection(sectionBtn, sectionEl) {
+      // Remove active from all buttons
+      [btnQrGen, btnAttendance, btnAdmin].forEach(b => b.classList.remove("active"));
+      // Hide all sections
+      [qrGenSection, attendanceSection, adminSection].forEach(s => s.classList.remove("active"));
 
-    btnAttendance.addEventListener("click", () => {
-      btnAttendance.classList.add("active");
-      btnQrGen.classList.remove("active");
-      attendanceSection.classList.add("active");
-      qrGenSection.classList.remove("active");
+      // Activate chosen button & section
+      sectionBtn.classList.add("active");
+      sectionEl.classList.add("active");
+    }
+
+    btnQrGen.addEventListener("click", () => showSection(btnQrGen, qrGenSection));
+    btnAttendance.addEventListener("click", () => showSection(btnAttendance, attendanceSection));
+    btnAdmin.addEventListener("click", () => {
+      showSection(btnAdmin, adminSection);
+      renderAdminPanel();
     });
 
     /* ---------------------------------------------
@@ -451,8 +558,6 @@
     // Download QR code as an image
     downloadQrBtn.addEventListener("click", () => {
       if (!qrCode) return;
-      // The library places a <canvas> or <img> inside #qrcode
-      // We'll try to find the <canvas> and convert it to data URL
       const qrCanvas = qrcodeContainer.querySelector("canvas");
       if (!qrCanvas) {
         alert("No QR code found to download!");
@@ -768,10 +873,73 @@
     }
 
     /* ---------------------------------------------
-       12) Initialize
+       12) Admin Panel (Analytics)
+       --------------------------------------------- */
+    const adminStats = document.getElementById("adminStats");
+    const logoutBtn = document.getElementById("logoutBtn");
+    logoutBtn.addEventListener("click", () => {
+      // "Log out" by reloading or hiding main container
+      location.reload();
+    });
+
+    function renderAdminPanel() {
+      const records = getAttendanceRecords();
+      if (!records.length) {
+        adminStats.innerHTML = `
+          <div class="stat-block">
+            <p class="stat-title">No Attendance Data Yet</p>
+            <p>Please add attendance records first.</p>
+          </div>
+        `;
+        return;
+      }
+
+      // Example stats:
+      // 1) Total Records
+      // 2) Distinct Students
+      // 3) Count by Status
+      // 4) Possibly daily stats
+
+      const totalRecords = records.length;
+      const distinctStudents = new Set(records.map(r => r.studentName)).size;
+
+      // Count each status
+      const statusCounts = {
+        Present: 0, Absent: 0, Late: 0, Excused: 0, Remote: 0
+      };
+      records.forEach(r => {
+        if (statusCounts[r.status] !== undefined) {
+          statusCounts[r.status]++;
+        }
+      });
+
+      adminStats.innerHTML = `
+        <div class="stat-block">
+          <p class="stat-title">Total Attendance Records</p>
+          <p>${totalRecords}</p>
+        </div>
+        <div class="stat-block">
+          <p class="stat-title">Distinct Students</p>
+          <p>${distinctStudents}</p>
+        </div>
+        <div class="stat-block">
+          <p class="stat-title">Status Counts</p>
+          <ul>
+            <li>Present: ${statusCounts.Present}</li>
+            <li>Absent: ${statusCounts.Absent}</li>
+            <li>Late: ${statusCounts.Late}</li>
+            <li>Excused: ${statusCounts.Excused}</li>
+            <li>Remote: ${statusCounts.Remote}</li>
+          </ul>
+        </div>
+      `;
+    }
+
+    /* ---------------------------------------------
+       13) Initialize
        --------------------------------------------- */
     populateDateSelectors();
-    renderRecords();
+    renderRecords(); // so if we log in after data is present, it shows
   </script>
 </body>
 </html>
